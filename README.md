@@ -27,7 +27,8 @@ EFIs-for-Hackintosh/
     │       └── config.plist       # Working OpenCore configuration
     └── Utilities/
         ├── clamshell-fix/         # Source code & installer for lid sleep/wake fix
-        └── camera-fix/            # Script to fix WhatsApp & WebRTC camera crashes
+        ├── camera-fix/            # Script to fix WhatsApp & WebRTC camera crashes
+        └── boom-volume-sync/      # Real-time CoreAudio volume synchronization for Boom 3D
 ```
 
 ---
