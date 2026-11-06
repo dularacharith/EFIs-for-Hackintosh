@@ -21,7 +21,7 @@ A fully tuned, battle-tested OpenCore configuration for the **Acer Swift 3 SF314
 | **Display Panel** | 14" Full HD (1920x1080) 60Hz eDP IPS Panel | ✅ Working (Smooth Brightness Control) |
 | **Battery Management** | Smart Battery Controller | ✅ Working (Percentage & Health Tracking) |
 | **USB Ports** | Custom Mapped XHCI + Type-C | ✅ Working (via `UTBMap.kext`) |
-| **Fingerprint Reader**| Goodix Fingerprint Sensor | ❌ Unsupported (No macOS drivers exist) |
+| **Fingerprint Reader**| EgisTec EH575 (`0x1c7a:0x0575`) | ❌ Unsupported (Requires Apple T2/M-series Secure Enclave) |
 
 ---
 
@@ -124,3 +124,32 @@ cd Utilities/clamshell-fix
 * **Selected Layout:** **`alcid=3`** (Mirone Laptop Patch)
 * **Pin Configuration:** Pure 2-channel stereo to internal speakers and 3.5mm combo jack.
 * **Why Layout 3?** Layout 30 (Xiaomi Air) has muted speaker routing on Acer laptops. Layout 23 configures a differential subwoofer pin that causes an out-of-phase "hollow/reverb" effect. Layout 3 provides clean, balanced, phase-accurate stereo audio.
+
+---
+
+## 📹 Camera & WhatsApp / WebRTC Video Calling Fix
+
+### The Problem
+When using **WhatsApp Desktop** (or other WebRTC-based video calling apps), the application crashed instantly upon initiating a video call or camera preview with:
+```text
+Crashed Thread: cmio.figcapturestream.emitsamplebuffer.queue
+Exception Type: EXC_BAD_ACCESS (SIGSEGV)
+Exception Codes: KERN_INVALID_ADDRESS at 0x0000000000000008
+```
+
+* **Why FaceTime Worked:** FaceTime natively accepts raw camera video frames (`NV12 / 420v`) and renders them directly via Metal 3D textures (`AppleIntelTGLGraphicsMTLDriver`).
+* **Why WhatsApp Crashed:** WhatsApp requires 32-bit `BGRA` frames. macOS delegates the live camera color-space conversion (`FigCaptureVideoConverter`) to the hardware video acceleration bundle: `/Library/GPUBundles/AppleIntelTGLGraphicsVADriver.bundle`. Because Tiger Lake video acceleration was never officially finished by Apple, this driver dereferences a NULL pointer (`0x0000000000000008`) in `AVD_DestroyAVDAccelerator`.
+
+### The Solution
+Disable the crashing Video Acceleration bundle so macOS automatically falls back to CPU software pixel format conversion (which is rock-solid and takes practically zero CPU on the Core i7-1165G7):
+
+```bash
+sudo mv /Library/GPUBundles/AppleIntelTGLGraphicsVADriver.bundle /Library/GPUBundles/AppleIntelTGLGraphicsVADriver.bundle.disabled
+sudo killall -9 VTDecoderXPCService VDCAssistant UVCAssistant 2>/dev/null || true
+```
+
+* Metal 3D acceleration (`AppleIntelTGLGraphicsMTLDriver.bundle`), desktop animations, and FaceTime remain **100% active**.
+* WhatsApp video calls work smoothly with the webcam.
+
+A 1-click script is provided in `Utilities/camera-fix/fix-camera-crash.sh`.
+
