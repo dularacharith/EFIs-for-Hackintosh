@@ -127,6 +127,37 @@ cd Utilities/clamshell-fix
 
 ---
 
+## 🔒 Idle Lock & Black Screen Prevention (Tiger Lake eDP & GPU Stability)
+
+### 1. Display Sleep Black Screen (`idle-lock`)
+* **The Problem:** On 11th Gen Tiger Lake laptops (Iris Xe), when macOS puts the internal eDP display to sleep via `displaysleep`, the display controller's DC6/DC9 power gating cuts the backlight PWM and video link. Upon user wake, the driver fails to re-initialize the panel, resulting in a **permanent black screen** (even though the laptop is still powered on).
+* **The Solution:** We provide `idle-lock` in `Utilities/idle-lock/`. It holds an active `PreventUserIdleDisplaySleep` assertion to maintain the active eDP link, while monitoring user activity. After 5 minutes of idle time, it cleanly and automatically engages the macOS Lock Screen (`SACLockScreenImmediate()`) without turning off the display link.
+* **Installation:**
+  ```bash
+  cd Utilities/idle-lock
+  ./install.sh
+  ```
+
+### 2. MediaAnalysis Background GPU Hang & Watchdog Panic
+* **The Problem:** Background daemons `mediaanalysisd` and `photoanalysisd` submit Metal compute analysis passes that hang the Intel Iris Xe GPU command ring (`Hardware context ID 733`), generating repeated `Kernel.gpuRestart` events. WindowServer freezes waiting for the GPU, and after 120 seconds `watchdogd` panics the kernel with:
+  `userspace watchdog timeout: no successful checkins from WindowServer in 120 seconds`.
+* **The Solution:** Permanently disable these background visual analysis daemons from running Metal compute kernels:
+  ```bash
+  launchctl disable gui/$(id -u)/com.apple.mediaanalysisd
+  launchctl disable gui/$(id -u)/com.apple.photoanalysisd
+  launchctl bootout gui/$(id -u)/com.apple.mediaanalysisd 2>/dev/null || true
+  launchctl bootout gui/$(id -u)/com.apple.photoanalysisd 2>/dev/null || true
+  ```
+
+---
+
+## 🎹 Bitwig Studio on Intel Iris Xe
+
+* **Bitwig 5.2+ and 6.x:** Switched to Google Skia with a mandatory Metal backend (`skia-metal`). On Intel Tiger Lake Iris Xe graphics, the Apple Metal driver (`AppleIntelTGLGraphicsMTLDriver`) fails to handle Skia's stencil attachment views and path covers, causing the main window to render as an empty/unresponsive grey canvas.
+* **Recommended & Working Version:** **Bitwig Studio 5.0.4**. This version natively uses **Cairo and Pixman CPU 2D vector rasterization** (`libcairo-graphics.jnilib`), completely bypassing Metal shader/stencil driver bugs. It runs smoothly with 100% functional UI on Intel Iris Xe graphics.
+
+---
+
 ## 📹 Camera & WhatsApp / WebRTC Video Calling Fix
 
 ### The Problem
