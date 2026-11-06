@@ -129,10 +129,15 @@ cd Utilities/clamshell-fix
 * **VoIP Calling & Low-Memory DMA Retention (`-tgldmickeep`):**
   - **The Root Cause:** WhatsApp, FaceTime, and WebRTC apps use `AUVoiceProcessingIO` (Apple's full-duplex echo cancellation audio unit). Without `-tgldmickeep`, `TGLDmic` powers down the Intel SST DSP core after idle. When WhatsApp initiates a call, TGLDmic attempts to re-boot the DSP by allocating 512 KB of contiguous physical memory below 4 GB (`IOMallocContiguous`). Because macOS memory fragments over normal uptime, this allocation fails (`FAIL DMA alloc (<4GB contiguous)`), returning `kIOReturnNoDevice` (`0xe00002c0`). This aborts CoreAudio's `AUVoiceProcessingIO` work loop with error `2003329396` ('what'), leaving WhatsApp's sound port as `nullptr` so neither party can hear anything.
   - **The Fix:** Injecting `-tgldmickeep` keeps the DSP core running and the early-boot DMA buffers mapped permanently. Voice calls connect immediately with two-way audio.
-* **Virtual Audio Routing (Boom 3D / eqMac):**
-  - When multi-channel virtual audio enhancers like Boom 3D are active, set WhatsApp / VoIP call settings directly to hardware devices:
-    - **Microphone:** `Internal Microphone (TGLDmic)`
-    - **Speaker:** `Built-in Output` (Internal Speakers)
+* **Virtual Audio Routing & Volume Sync (Boom 3D / eqMac):**
+  - **The Problem:** When running virtual audio enhancers like **Boom 3D**, macOS volume keys (F11/F12) and Control Center sliders adjust only the virtual driver (`BoomAudio`). Boom 3D locks the physical speakers (`Built-in Output`) at a fixed high volume. Because WhatsApp and FaceTime bypass virtual audio drivers for hardware echo cancellation, call audio plays directly through `Built-in Output`, remaining permanently stuck at maximum volume regardless of key presses.
+  - **The Workaround (`boom-volume-sync`):** We developed an ultra-lightweight, 0.0% CPU CoreAudio daemon located in `Utilities/boom-volume-sync/`. It listens to real-time CoreAudio property changes on `BoomAudio` (`kAudioHardwareServiceDeviceProperty_VirtualMainVolume` and `kAudioDevicePropertyMute`) and instantly mirrors them to the hardware DAC (`Built-in Output`). Whenever you adjust volume keys or the slider, both Boom 3D and WhatsApp calls change volume in perfect sync.
+  - **Installation:**
+    ```bash
+    cd Utilities/boom-volume-sync
+    chmod +x install.sh
+    ./install.sh
+    ```
 
 ---
 
