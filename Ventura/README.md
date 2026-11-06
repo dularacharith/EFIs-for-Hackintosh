@@ -127,16 +127,15 @@ cd Utilities/clamshell-fix
 
 ---
 
-## 🔒 Idle Lock & Black Screen Prevention (Tiger Lake eDP & GPU Stability)
+## 🔒 Display Sleep & GPU Stability (Tiger Lake eDP & Background Compute)
 
-### 1. Display Sleep Black Screen (`idle-lock`)
-* **The Problem:** On 11th Gen Tiger Lake laptops (Iris Xe), when macOS puts the internal eDP display to sleep via `displaysleep`, the display controller's DC6/DC9 power gating cuts the backlight PWM and video link. Upon user wake, the driver fails to re-initialize the panel, resulting in a **permanent black screen** (even though the laptop is still powered on).
-* **The Solution:** We provide `idle-lock` in `Utilities/idle-lock/`. It holds an active `PreventUserIdleDisplaySleep` assertion to maintain the active eDP link, while monitoring user activity. After 5 minutes of idle time, it cleanly and automatically engages the macOS Lock Screen (`SACLockScreenImmediate()`) without turning off the display link.
-* **Installation:**
-  ```bash
-  cd Utilities/idle-lock
-  ./install.sh
+### 1. Display Sleep & Instant Wake (`displaysleep 5`)
+* **The Problem:** By default on Tiger Lake Iris Xe graphics, when the display goes to sleep, the display controller enters DC6/DC9 power gating and shuts off display power wells. On wake, Apple's driver never properly re-arms the panel link, leaving the monitor permanently black.
+* **The Solution:** We patched the kernel boot arguments:
+  ```text
+  -nodisplaysleepDC6 -noDC9 dc6config=0
   ```
+  These boot arguments prevent the display controller from entering the un-wakeable DC6/DC9 sleep states. Combined with `clamshell-fix` (which asserts `PreventSystemSleep`), the display backlight powers down completely after 5 minutes of idle time (`displaysleep 5`), and wakes up **instantly to your Lock Screen** upon touching any key or the trackpad.
 
 ### 2. MediaAnalysis Background GPU Hang & Watchdog Panic
 * **The Problem:** Background daemons `mediaanalysisd` and `photoanalysisd` submit Metal compute analysis passes that hang the Intel Iris Xe GPU command ring (`Hardware context ID 733`), generating repeated `Kernel.gpuRestart` events. WindowServer freezes waiting for the GPU, and after 120 seconds `watchdogd` panics the kernel with:
