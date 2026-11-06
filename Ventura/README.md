@@ -30,7 +30,7 @@ A fully tuned, battle-tested OpenCore configuration for the **Acer Swift 3 SF314
 Below is the complete list of boot arguments injected in `NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args`:
 
 ```text
--v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3
+-v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3
 ```
 
 ### Detailed Breakdown
@@ -47,6 +47,7 @@ Below is the complete list of boot arguments injected in `NVRAM -> Add -> 7C4361
 | **`-vi2c-force-polling`** | `VoodooI2C` | Forces polling mode for I2C HID trackpad, resolving interrupt storm timeouts and stuttering on Intel Tiger Lake LPSS I2C controllers. |
 | **`npci=0x2000`** | macOS Kernel | Prevents PCI configuration space mapping deadlocks during PCI root bridge enumeration. |
 | **`-tgldmic`** | `TGLDmic` | Enables the digital microphone audio pipeline on Intel Tiger Lake platforms. |
+| **`-tgldmickeep`** | `TGLDmic` | **Critical VoIP & Mic Retention Fix:** Keeps the Intel Smart Sound (cAVS 2.5) DSP core running and keeps the Sound Open Firmware (SOF) DMA ring buffers permanently mapped in memory below 4GB. Without this, TGLDmic powers down the DSP after boot; subsequent on-demand DSP wake attempts fail contiguous physical DMA allocation (`FAIL DMA alloc (<4GB contiguous)`) due to macOS memory fragmentation, completely breaking CoreAudio `AUVoiceProcessingIO` and causing silent/dropped audio in WhatsApp and FaceTime calls. |
 | **`darkwake=0`** | Power Management | Forces immediate full display wake upon any system wake event. |
 | **`-v`** | macOS Kernel | Verbose boot output (displays startup log on screen for troubleshooting). |
 | **`debug=0x100`** | macOS Kernel | Disables auto-reboot on kernel panic, keeping panic details visible on screen. |
@@ -118,12 +119,20 @@ cd Utilities/clamshell-fix
 
 ---
 
-## 🔊 Audio Configuration
+## 🔊 Audio & Microphone Configuration
 
-* **Codec:** Realtek ALC255
+* **Codec:** Realtek ALC255 (`0x10EC0255`)
 * **Selected Layout:** **`alcid=3`** (Mirone Laptop Patch)
 * **Pin Configuration:** Pure 2-channel stereo to internal speakers and 3.5mm combo jack.
 * **Why Layout 3?** Layout 30 (Xiaomi Air) has muted speaker routing on Acer laptops. Layout 23 configures a differential subwoofer pin that causes an out-of-phase "hollow/reverb" effect. Layout 3 provides clean, balanced, phase-accurate stereo audio.
+* **Internal Digital Microphone:** Intel Tiger Lake Smart Sound Technology (SST) Digital Microphone Array via `TGLDmic.kext` and CoreAudio HAL plugin `TGLDmic.driver`.
+* **VoIP Calling & Low-Memory DMA Retention (`-tgldmickeep`):**
+  - **The Root Cause:** WhatsApp, FaceTime, and WebRTC apps use `AUVoiceProcessingIO` (Apple's full-duplex echo cancellation audio unit). Without `-tgldmickeep`, `TGLDmic` powers down the Intel SST DSP core after idle. When WhatsApp initiates a call, TGLDmic attempts to re-boot the DSP by allocating 512 KB of contiguous physical memory below 4 GB (`IOMallocContiguous`). Because macOS memory fragments over normal uptime, this allocation fails (`FAIL DMA alloc (<4GB contiguous)`), returning `kIOReturnNoDevice` (`0xe00002c0`). This aborts CoreAudio's `AUVoiceProcessingIO` work loop with error `2003329396` ('what'), leaving WhatsApp's sound port as `nullptr` so neither party can hear anything.
+  - **The Fix:** Injecting `-tgldmickeep` keeps the DSP core running and the early-boot DMA buffers mapped permanently. Voice calls connect immediately with two-way audio.
+* **Virtual Audio Routing (Boom 3D / eqMac):**
+  - When multi-channel virtual audio enhancers like Boom 3D are active, set WhatsApp / VoIP call settings directly to hardware devices:
+    - **Microphone:** `Internal Microphone (TGLDmic)`
+    - **Speaker:** `Built-in Output` (Internal Speakers)
 
 ---
 
