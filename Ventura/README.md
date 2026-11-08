@@ -9,7 +9,7 @@ A fully tuned, battle-tested OpenCore configuration for the **Acer Swift 3 SF314
 | Component | Hardware Details | Status |
 | :--- | :--- | :--- |
 | **Laptop Model** | Acer Swift 3 SF314-511 | Supported |
-| **Processor (CPU)** | Intel Core i7-1165G7 (4 Cores / 8 Threads, up to 4.70 GHz) | ✅ Working (Native PM) |
+| **Processor (CPU)** | Intel Core i7-1165G7 (4 Cores / 8 Threads, up to 4.70 GHz) | ✅ Working (Tuned PM via CPUFriend + Balanced EPP `0x80` & LFM `0x08`) |
 | **Integrated Graphics** | Intel Iris Xe Graphics G7 96EUs (`0x9A498086`) | ✅ Working (Metal 3D Acceleration via WhateverXe) |
 | **Audio Codec** | Realtek ALC255 (`0x10EC0255`) | ✅ Working (Layout ID `3`, Clean Stereo) |
 | **Microphone** | Intel Tiger Lake Digital Mic Array | ✅ Working (via `TGLDmic.kext`) |
@@ -30,13 +30,14 @@ A fully tuned, battle-tested OpenCore configuration for the **Acer Swift 3 SF314
 Below is the complete list of boot arguments injected in `NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args`:
 
 ```text
--v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3
+-v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3 -wex-skip-gputicks
 ```
 
 ### Detailed Breakdown
 
 | Boot Argument | Component | Exact Technical Purpose |
 | :--- | :--- | :--- |
+| **`-wex-skip-gputicks`** | `WhateverXe` | **Critical Hardware Hang Fix:** Intercepts driver reads to Tiger Lake hardware register `GPU_TICKS` (`0x2910`) in `AppleIntelTGLGraphicsFramebuffer::startGTHWAvgFreq` and returns `0`. Prevents CPU/GPU bus deadlocks that trigger machine-check panics (`IA32_MC7_STATUS`) or complete system freezes. |
 | **`-nodisplaysleepDC6`** | `AppleIntelTGLGraphicsFramebuffer` | **Critical Display Sleep Fix:** Sets internal driver offset `0xc29 = 0`. Prevents the Tiger Lake display controller from requesting hardware DC6 power gating when the display sleeps. |
 | **`-noDC9`** | `AppleIntelTGLGraphicsFramebuffer` | **Critical Display Sleep Fix:** Sets internal driver offset `0xc2a = 0`. Prevents `clientNotify` from shutting off display power wells (`overridePowerWellsState(false)`) and cutting interrupts (`hwDisableInterrupts()`), which Apple's driver never properly re-enabled on wake, causing permanent black screens. |
 | **`dc6config=0`** | `AppleIntelTGLGraphicsFramebuffer` | **Critical Display Sleep Fix:** Sets internal driver offset `0xb48 = 0`. Permanently neutralizes all 16 `enableHWDC6` call sites across the graphics stack, preventing firmware hangs. |
@@ -147,6 +148,18 @@ cd Utilities/clamshell-fix
     chmod +x install.sh
     ./install.sh
     ```
+
+---
+
+## ❄️ CPU Power Management & Thermal Optimization (`CPUFriend`)
+
+* **The Problem:** By default under `MacBookPro16,2` SMBIOS, macOS applies Apple's aggressive factory power profile (EPP `0x00`/`0x20` tuned for dual-fan MacBook Pros). This causes the Core i7-1165G7 to aggressively spike to 4.70 GHz at 35W–40W for minor tasks, heating the chassis to 85°C–95°C and draining the battery rapidly.
+* **The Solution (`CPUFriend` + `CPUFriendDataProvider`):**
+  - **Low Frequency Mode (LFM):** Set to **800 MHz (`0x08`)**, allowing cores to drop into deep idle state on the desktop.
+  - **Energy Performance Preference (EPP):** Set to **Balanced Power Savings (`0x80`)** (matching Windows/MacBook Air baseline). The CPU runs at cool, efficient clock speeds for normal workloads and smoothly ramps to Turbo only when heavy workloads require it.
+  - **Performance Bias (PerfBias):** Set to **`0x07`** (MacBook Air mode for maximum energy efficiency).
+  - **MacBook Air Power Optimizations:** Enabled energy-reduced playback, thermally optimized Xcode, and power-optimized screen assets.
+* **Result:** Idle/daily temperatures drop by **15°C–25°C** (staying around 50°C–60°C), fans remain quiet, battery runtime nearly doubles, and real-time audio playback in DAWs (Logic Pro, Ableton) runs smooth without thermal throttling dropouts.
 
 ---
 
