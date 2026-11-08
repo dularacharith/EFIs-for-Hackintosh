@@ -104,7 +104,7 @@ Intel 11th Gen Tiger Lake laptops do not support legacy ACPI S3 sleep in their U
 ### The Solution Included
 1. **Power Management (`pmset`) Settings:**
    ```bash
-   sudo pmset -a sleep 0 displaysleep 5 standby 0 autopoweroff 0 powernap 0 proximitywake 0 tcpkeepalive 0 womp 0
+   sudo pmset -a disablesleep 1 sleep 0 displaysleep 5 standby 0 autopoweroff 0 powernap 0 proximitywake 0 tcpkeepalive 0 womp 0
    ```
 2. **`clamshell-fix` Daemon (Located in `Utilities/clamshell-fix/`):**
    - Asserts `PreventSystemSleep` while allowing `PreventDisplaySleep = 0`.

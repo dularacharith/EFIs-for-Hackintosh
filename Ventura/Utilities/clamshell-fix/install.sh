@@ -21,7 +21,7 @@ launchctl unload "${AGENTS_DIR}/com.user.clamshellfix.plist" 2>/dev/null || true
 launchctl load -w "${AGENTS_DIR}/com.user.clamshellfix.plist"
 
 echo "Configuring recommended power management (pmset)..."
-sudo pmset -a sleep 0 displaysleep 5 standby 0 autopoweroff 0 powernap 0 proximitywake 0 tcpkeepalive 0 womp 0
+sudo pmset -a disablesleep 1 sleep 0 displaysleep 5 standby 0 autopoweroff 0 powernap 0 proximitywake 0 tcpkeepalive 0 womp 0
 
 echo "=== Clamshell Fix Installed & Verified Successfully! ==="
 pmset -g assertions
