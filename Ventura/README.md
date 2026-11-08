@@ -30,7 +30,7 @@ A fully tuned, battle-tested OpenCore configuration for the **Acer Swift 3 SF314
 Below is the complete list of boot arguments injected in `NVRAM -> Add -> 7C436110-AB2A-4BBB-A880-FE41995C9F82 -> boot-args`:
 
 ```text
--v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3 -wex-skip-gputicks
+-v -dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 alcid=3 -wex-skip-gputicks
 ```
 
 ### Detailed Breakdown
