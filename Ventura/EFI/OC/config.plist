@@ -94,14 +94,6 @@
 				<key>Path</key>
 				<string>SSDT-XOSI.aml</string>
 			</dict>
-			<dict>
-				<key>Comment</key>
-				<string>Enable Apple Deep Idle (S0ix Modern Standby)</string>
-				<key>Enabled</key>
-				<true/>
-				<key>Path</key>
-				<string>SSDT-DEEPIDLE.aml</string>
-			</dict>
 		</array>
 		<key>Delete</key>
 		<array/>
@@ -205,6 +197,8 @@
 			<false/>
 			<key>AvoidRuntimeDefrag</key>
 			<true/>
+			<key>ClearTaskSwitchBit</key>
+			<false/>
 			<key>DevirtualiseMmio</key>
 			<false/>
 			<key>DisableSingleUser</key>
@@ -216,6 +210,8 @@
 			<key>EnableSafeModeSlide</key>
 			<true/>
 			<key>EnableWriteUnprotector</key>
+			<false/>
+			<key>FixupAppleEfiImages</key>
 			<false/>
 			<key>ForceBooterSignature</key>
 			<false/>
@@ -917,24 +913,6 @@
 				<key>PlistPath</key>
 				<string>Contents/Info.plist</string>
 			</dict>
-			<dict>
-				<key>Arch</key>
-				<string>Any</string>
-				<key>BundlePath</key>
-				<string>S0ixStandby.kext</string>
-				<key>Comment</key>
-				<string>Modern Standby (S0ix) Deep Idle and Iris Xe GPU wake reset</string>
-				<key>Enabled</key>
-				<true/>
-				<key>ExecutablePath</key>
-				<string>Contents/MacOS/S0ixStandby</string>
-				<key>MaxKernel</key>
-				<string></string>
-				<key>MinKernel</key>
-				<string></string>
-				<key>PlistPath</key>
-				<string>Contents/Info.plist</string>
-			</dict>
 		</array>
 		<key>Block</key>
 		<array/>
@@ -1084,6 +1062,8 @@
 			<false/>
 			<key>DisableIoMapper</key>
 			<true/>
+			<key>DisableIoMapperMapping</key>
+			<false/>
 			<key>DisableLinkeditJettison</key>
 			<true/>
 			<key>DisableRtcChecksum</key>
@@ -1138,9 +1118,11 @@
 			<key>HibernateMode</key>
 			<string>Auto</string>
 			<key>HibernateSkipsPicker</key>
-			<true/>
+			<false/>
 			<key>HideAuxiliary</key>
 			<true/>
+			<key>InstanceIdentifier</key>
+			<string></string>
 			<key>LauncherOption</key>
 			<string>Disabled</string>
 			<key>LauncherPath</key>
@@ -1290,7 +1272,7 @@
 				AAAAAAAAAAAAAAAAAAA=
 				</data>
 				<key>boot-args</key>
-				<string>-dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3 -wex-skip-gputicks -s0ixd3</string>
+				<string>-dbgenhdbg debug=0x100 keepsyms=1 -allow3d -disablegfxfirmware -igfxdvmt -vi2c-force-polling npci=0x2000 -tgldmic -tgldmickeep darkwake=0 -nodisplaysleepDC6 -noDC9 dc6config=0 alcid=3 -wex-skip-gputicks</string>
 				<key>csr-active-config</key>
 				<data>
 				AwgAAA==
@@ -1480,6 +1462,8 @@
 				<string></string>
 				<key>Enabled</key>
 				<true/>
+				<key>HideVerbose</key>
+				<false/>
 				<key>LoadEarly</key>
 				<false/>
 				<key>Path</key>
@@ -1492,6 +1476,8 @@
 				<string></string>
 				<key>Enabled</key>
 				<true/>
+				<key>HideVerbose</key>
+				<false/>
 				<key>LoadEarly</key>
 				<false/>
 				<key>Path</key>
@@ -1504,6 +1490,8 @@
 				<string></string>
 				<key>Enabled</key>
 				<true/>
+				<key>HideVerbose</key>
+				<false/>
 				<key>LoadEarly</key>
 				<false/>
 				<key>Path</key>
@@ -1516,6 +1504,8 @@
 				<string></string>
 				<key>Enabled</key>
 				<true/>
+				<key>HideVerbose</key>
+				<false/>
 				<key>LoadEarly</key>
 				<false/>
 				<key>Path</key>
@@ -1545,16 +1535,22 @@
 		<dict>
 			<key>ClearScreenOnModeSwitch</key>
 			<false/>
+			<key>ConsoleFont</key>
+			<string></string>
 			<key>ConsoleMode</key>
 			<string></string>
 			<key>DirectGopRendering</key>
 			<false/>
 			<key>ForceResolution</key>
 			<false/>
+			<key>GopBurstMode</key>
+			<false/>
 			<key>GopPassThrough</key>
 			<string>Disabled</string>
 			<key>IgnoreTextInGraphics</key>
 			<false/>
+			<key>InitialMode</key>
+			<string>Auto</string>
 			<key>ProvideConsoleGop</key>
 			<true/>
 			<key>ReconnectGraphicsOnConnect</key>
@@ -1610,6 +1606,8 @@
 			<false/>
 			<key>OSInfo</key>
 			<false/>
+			<key>PciIo</key>
+			<false/>
 			<key>UnicodeCollation</key>
 			<false/>
 		</dict>
@@ -1639,12 +1637,18 @@
 			<true/>
 			<key>ResizeGpuBars</key>
 			<integer>-1</integer>
+			<key>ResizeUsePciRbIo</key>
+			<false/>
+			<key>ShimRetainProtocol</key>
+			<false/>
 			<key>TscSyncTimeout</key>
 			<integer>0</integer>
 			<key>UnblockFsConnect</key>
 			<false/>
 		</dict>
 		<key>ReservedMemory</key>
+		<array/>
+		<key>Unload</key>
 		<array/>
 	</dict>
 </dict>
